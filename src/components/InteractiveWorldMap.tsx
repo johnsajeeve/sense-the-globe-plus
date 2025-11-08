@@ -152,7 +152,7 @@ const InteractiveWorldMap = () => {
   }, [navigate]);
 
   return (
-    <div className="relative w-full h-[600px] rounded-2xl overflow-hidden shadow-elegant">
+    <div className="relative w-full h-[700px] md:h-[800px] rounded-3xl overflow-hidden shadow-glow border border-border/50">
       <div ref={mapContainer} className="absolute inset-0" />
       
       {/* Overlay gradient */}

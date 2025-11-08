@@ -100,16 +100,23 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Interactive Map Section */}
-        <section className="py-20 px-4 bg-background">
-          <div className="container">
-            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Explore the World
-            </h2>
-            <p className="text-center text-muted-foreground mb-12 text-lg max-w-2xl mx-auto">
-              Click on any country marker to discover personalized travel insights
-            </p>
-            <InteractiveWorldMap />
+        {/* Interactive Map Section - Prominent */}
+        <section className="py-12 px-4 bg-gradient-to-b from-background via-muted/20 to-background">
+          <div className="container max-w-7xl">
+            <div className="text-center mb-8 animate-fade-in">
+              <h2 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary via-primary-glow to-primary bg-clip-text text-transparent">
+                Explore the World
+              </h2>
+              <p className="text-center text-muted-foreground text-xl max-w-3xl mx-auto leading-relaxed">
+                Click on any country marker to discover personalized travel insights and start planning your next adventure
+              </p>
+            </div>
+            <div className="relative">
+              <div className="absolute -inset-4 bg-gradient-to-r from-primary/10 via-primary-glow/10 to-primary/10 rounded-3xl blur-2xl opacity-50"></div>
+              <div className="relative">
+                <InteractiveWorldMap />
+              </div>
+            </div>
           </div>
         </section>
 
