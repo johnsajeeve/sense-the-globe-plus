@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +7,24 @@ import { Globe2, Heart, MapPin, Shield } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { countries } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [countryCode, setCountryCode] = useState("");
+  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleExplore = () => {
     const upperCode = countryCode.toUpperCase();
@@ -36,6 +50,17 @@ const Index = () => {
               Personalized travel guidance for everyone. Explore destinations with confidence, 
               knowing your health and accessibility needs are prioritized.
             </p>
+
+            {!user && (
+              <div className="mb-8 flex gap-4 justify-center">
+                <Button size="lg" onClick={() => navigate("/auth")}>
+                  Get Started - Sign Up Free
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
+                  Sign In
+                </Button>
+              </div>
+            )}
             
             <Card className="max-w-md mx-auto shadow-lg">
               <CardHeader>
@@ -137,11 +162,24 @@ const Index = () => {
               Ready to Experience the World?
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Set up your health profile to get personalized travel recommendations.
+              {user 
+                ? "Set up your health profile to get personalized travel recommendations."
+                : "Create a free account and set up your profile for personalized travel."}
             </p>
-            <Button size="lg" onClick={() => navigate("/profile")}>
-              Create My Profile
-            </Button>
+            {user ? (
+              <Button size="lg" onClick={() => navigate("/profile")}>
+                Create My Profile
+              </Button>
+            ) : (
+              <div className="flex gap-4 justify-center">
+                <Button size="lg" onClick={() => navigate("/auth")}>
+                  Sign Up Free
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
+                  Sign In
+                </Button>
+              </div>
+            )}
           </div>
         </section>
       </main>
