@@ -1,9 +1,33 @@
-import { Link, useLocation } from "react-router-dom";
-import { Globe2, Heart, Users } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Globe2, Heart, Users, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out successfully");
+    navigate("/");
+  };
   
   const navItems = [
     { path: "/", label: "Explore", icon: Globe2 },
@@ -40,6 +64,23 @@ const Header = () => {
               </Link>
             );
           })}
+          
+          {user ? (
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          ) : (
+            <Link
+              to="/auth"
+              className={cn(
+                "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                location.pathname === "/auth" ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              Sign In
+            </Link>
+          )}
         </nav>
       </div>
     </header>

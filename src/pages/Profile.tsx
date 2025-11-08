@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,19 +8,74 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { UserProfile, mobilityOptions, commonConditions, commonTriggers } from "@/types/profile";
-import { saveProfile, loadProfile } from "@/utils/localStorage";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
-  const [profile, setProfile] = useState<UserProfile>(loadProfile());
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile>({
+    mobilityLevel: "none",
+    conditions: [],
+    triggers: [],
+  });
 
   useEffect(() => {
-    setProfile(loadProfile());
+    checkUser();
   }, []);
 
-  const handleSave = () => {
-    saveProfile(profile);
-    toast.success("Profile saved successfully!");
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    // Load profile from database
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
+
+    if (data) {
+      setProfile({
+        mobilityLevel: data.mobility_level as any,
+        conditions: data.conditions || [],
+        triggers: data.triggers || [],
+      });
+    }
+
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      toast.error("Please sign in to save your profile");
+      navigate("/auth");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        mobility_level: profile.mobilityLevel,
+        conditions: profile.conditions,
+        triggers: profile.triggers,
+      })
+      .eq("id", session.user.id);
+
+    if (error) {
+      toast.error("Failed to save profile");
+    } else {
+      toast.success("Profile saved successfully!");
+    }
+    
+    setLoading(false);
   };
 
   const toggleCondition = (condition: string) => {
@@ -135,8 +191,8 @@ const Profile = () => {
 
             {/* Save Button */}
             <div className="flex justify-end">
-              <Button onClick={handleSave} size="lg">
-                Save Profile
+              <Button onClick={handleSave} size="lg" disabled={loading}>
+                {loading ? "Saving..." : "Save Profile"}
               </Button>
             </div>
           </div>
