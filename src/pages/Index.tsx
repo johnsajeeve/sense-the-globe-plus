@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Globe2, Heart, MapPin, Shield } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import InteractiveWorldMap from "@/components/InteractiveWorldMap";
 import { countries } from "@/data/mockData";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -96,6 +97,19 @@ const Index = () => {
                 </p>
               </CardContent>
             </Card>
+          </div>
+        </section>
+
+        {/* Interactive Map Section */}
+        <section className="py-20 px-4 bg-background">
+          <div className="container">
+            <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              Explore the World
+            </h2>
+            <p className="text-center text-muted-foreground mb-12 text-lg max-w-2xl mx-auto">
+              Click on any country marker to discover personalized travel insights
+            </p>
+            <InteractiveWorldMap />
           </div>
         </section>
 
