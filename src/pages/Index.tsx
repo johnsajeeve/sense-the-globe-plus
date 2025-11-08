@@ -31,7 +31,7 @@ const Index = () => {
     if (countries[upperCode]) {
       navigate(`/destination/${upperCode}`);
     } else {
-      alert("Country code not found. Try JP, IN, or FR for demo.");
+      alert("Country code not found. Available countries: JP, US, GB, ES, IT, TH, AU, BR, CA, DE, MX, AE, SG, IN, FR");
     }
   };
 
@@ -66,13 +66,13 @@ const Index = () => {
               <CardHeader>
                 <CardTitle className="text-left">Start Your Journey</CardTitle>
                 <CardDescription className="text-left">
-                  Enter a country code to explore (e.g., JP, IN, FR)
+                  Enter a country code to explore (e.g., JP, US, GB, ES, IT, TH, AU, BR, CA, DE, MX, AE, SG, IN, FR)
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Country code (JP, IN, FR)"
+                    placeholder="Country code (e.g., JP, US, GB)"
                     value={countryCode}
                     onChange={(e) => setCountryCode(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleExplore()}
