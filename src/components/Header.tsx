@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ThemeToggle from "./ThemeToggle";
 
 const Header = () => {
   const location = useLocation();
@@ -65,22 +66,26 @@ const Header = () => {
             );
           })}
           
-          {user ? (
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          ) : (
-            <Link
-              to="/auth"
-              className={cn(
-                "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
-                location.pathname === "/auth" ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              Sign In
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            
+            {user ? (
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            ) : (
+              <Link
+                to="/auth"
+                className={cn(
+                  "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                  location.pathname === "/auth" ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
         </nav>
       </div>
     </header>
