@@ -1,107 +1,200 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/lib/supabaseClient";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Users } from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
-export default function Community() {
-  const { profile: myProfile, loading } = useProfile();
-  const [buddies, setBuddies] = useState<any[]>([]);
-  const [searching, setSearching] = useState(true);
+interface Community {
+  id: string;
+  name: string;
+  description: string;
+}
 
+const CommunityPage = () => {
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [joinedCommunities, setJoinedCommunities] = useState<string[]>([]);
+
+  // ✅ Get current logged-in user
   useEffect(() => {
-    if (!myProfile) return;
+    const fetchUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) console.error("❌ Error getting user:", error.message);
+      else if (data?.user) setUser(data.user);
+    };
+    fetchUser();
+  }, []);
 
-    async function loadMatches() {
+  // ✅ Auto-create profile if user doesn't have one
+  useEffect(() => {
+    const ensureProfileExists = async () => {
+      if (!user) return;
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
-        .neq("id", myProfile.id);
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!data && !error) {
+        console.log("🆕 Creating profile for user:", user.id);
+        await supabase.from("profiles").insert([{ id: user.id, name: user.email }]);
+      }
+    };
+    ensureProfileExists();
+  }, [user]);
+
+  // ✅ Fetch all available communities
+  useEffect(() => {
+    const fetchCommunities = async () => {
+      const { data, error } = await supabase.from("communities").select("*");
+      if (error) {
+        console.error("❌ Error fetching communities:", error.message);
+      } else {
+        console.log("✅ Communities fetched:", data);
+        setCommunities(data || []);
+      }
+    };
+    fetchCommunities();
+  }, []);
+
+  // ✅ Fetch which communities the user already joined
+  useEffect(() => {
+    const fetchJoined = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from("community_members")
+        .select("community_id")
+        .eq("user_id", user.id);
 
       if (error) {
-        console.error(error);
-        setSearching(false);
-        return;
+        console.error("❌ Error fetching joined communities:", error.message);
+      } else {
+        setJoinedCommunities(data.map((row) => row.community_id));
       }
+    };
+    fetchJoined();
+  }, [user]);
 
-      const matched = data.filter((p) => {
-        const mobilityMatch =
-          p.mobility_level && myProfile.mobility_level &&
-          p.mobility_level === myProfile.mobility_level;
-
-        const conditionMatch =
-          p.conditions && myProfile.conditions &&
-          p.conditions.some((c: string) => myProfile.conditions.includes(c));
-
-        const triggerMatch =
-          p.triggers && myProfile.triggers &&
-          p.triggers.some((t: string) => myProfile.triggers.includes(t));
-
-        return mobilityMatch || conditionMatch || triggerMatch;
-      });
-
-      setBuddies(matched);
-      setSearching(false);
+  // ✅ Join a community
+  const handleJoin = async (communityId: string, name: string) => {
+    if (!user) {
+      alert("Please sign in to join communities!");
+      return;
     }
 
-    loadMatches();
-  }, [myProfile]);
+    console.log("🧠 Joining:", { userId: user.id, communityId });
 
-  if (loading || searching) {
-    return <p className="p-6 text-center">Finding travel buddies with similar needs…</p>;
-  }
+    const { data, error } = await supabase
+      .from("community_members")
+      .insert([{ user_id: user.id, community_id: communityId }])
+      .select();
 
-  if (!myProfile) {
-    return (
-      <p className="p-6 text-center text-gray-600">
-        Please log in to view your community matches.
-      </p>
-    );
-  }
+    if (error) {
+      console.error("❌ Error joining community:", error.message);
+      alert("Something went wrong while joining. Please try again.");
+    } else {
+      console.log("✅ Joined community successfully:", data);
+      alert(`✅ Joined ${name}!`);
+      setJoinedCommunities((prev) => [...prev, communityId]);
+    }
+  };
 
+  // ✅ Leave a community
+  const handleLeave = async (communityId: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("community_members")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("community_id", communityId);
+
+    if (error) {
+      console.error("❌ Error leaving community:", error.message);
+      alert("Something went wrong while leaving. Please try again.");
+    } else {
+      alert("👋 Left community successfully.");
+      setJoinedCommunities((prev) => prev.filter((id) => id !== communityId));
+    }
+  };
+
+  // ✅ Render
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-4">Your Accessibility Travel Buddies</h1>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header />
 
-      {buddies.length === 0 ? (
-        <p className="text-gray-500">
-          No matches yet — as more travelers join, we’ll match them to you automatically.
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {buddies.map((b) => (
-            <div key={b.id} className="border border-gray-300 p-4 rounded-lg shadow-sm">
-              <h2 className="font-semibold text-lg">{b.full_name || "Traveler"}</h2>
-              <p className="text-sm text-gray-600">{b.email}</p>
+      <main className="flex-1 py-12 px-4">
+        <div className="container max-w-6xl mx-auto">
+          <div className="mb-8 text-center">
+            <h1 className="text-4xl font-bold mb-2">Travel Communities 🌍</h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Join local and global communities to connect with travelers sharing your interests and accessibility needs.
+            </p>
+          </div>
 
-              <div className="flex flex-wrap gap-2 mt-3 text-sm">
-                {b.mobility_level && (
-                  <span className="px-2 py-1 bg-blue-100 rounded">
-                    Mobility: {b.mobility_level}
-                  </span>
-                )}
+          {communities.length === 0 ? (
+            <p className="text-center text-muted-foreground">
+              No communities found. Please add some in Supabase.
+            </p>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {communities.map((community) => (
+                <Card
+                  key={community.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <CardTitle>{community.name}</CardTitle>
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <CardDescription>{community.description}</CardDescription>
+                  </CardHeader>
 
-                {b.conditions?.map((c: string) => (
-                  <span key={c} className="px-2 py-1 bg-purple-100 rounded">
-                    {c}
-                  </span>
-                ))}
+                  <CardContent className="flex flex-col gap-2">
+                    {joinedCommunities.includes(community.id) ? (
+                      <Button
+                        variant="destructive"
+                        onClick={() => handleLeave(community.id)}
+                      >
+                        Leave Community
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleJoin(community.id, community.name)}
+                      >
+                        Join Community
+                      </Button>
+                    )}
 
-                {b.triggers?.map((t: string) => (
-                  <span key={t} className="px-2 py-1 bg-red-100 rounded">
-                    Avoids: {t}
-                  </span>
-                ))}
-              </div>
-
-              <button
-                className="mt-3 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                onClick={() => alert(`Message feature would launch chat with ${b.email}`)}
-              >
-                Connect
-              </button>
+                    {/* ✅ View Members button */}
+                    <Link to={`/community/${community.id}`}>
+                      <Button variant="outline" className="w-full mt-1">
+                        View Members
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </main>
+
+      <Footer />
     </div>
   );
-}
+};
+
+export default CommunityPage;
