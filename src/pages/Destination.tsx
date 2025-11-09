@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useProfile } from "@/hooks/useProfile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,16 +8,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ActivityCard from "@/components/ActivityCard";
 import { countries, activities } from "@/data/mockData";
-import { loadProfile } from "@/utils/localStorage";
 
 const Destination = () => {
   const { country } = useParams<{ country: string }>();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState(loadProfile());
-
-  useEffect(() => {
-    setProfile(loadProfile());
-  }, []);
+  const {profile,loading} = useProfile(); // ✅ Returns profile or null
 
   if (!country || !countries[country]) {
     return (
@@ -36,7 +31,7 @@ const Destination = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1 py-8 px-4">
         <div className="container max-w-6xl">
           <Button 
@@ -68,6 +63,7 @@ const Destination = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
@@ -75,7 +71,7 @@ const Destination = () => {
                     <span className="font-medium">Recommended Vaccines</span>
                   </div>
                   <div className="space-y-1">
-                    {countryData.vaccines.map(vaccine => (
+                    {countryData.vaccines.map((vaccine) => (
                       <Badge key={vaccine} variant="outline" className="mr-1">
                         {vaccine}
                       </Badge>
@@ -90,7 +86,7 @@ const Destination = () => {
                   </div>
                   {countryData.outbreaks.length > 0 ? (
                     <div className="space-y-1">
-                      {countryData.outbreaks.map(outbreak => (
+                      {countryData.outbreaks.map((outbreak) => (
                         <Badge key={outbreak} variant="outline" className="mr-1 border-warning text-warning">
                           {outbreak}
                         </Badge>
@@ -113,20 +109,22 @@ const Destination = () => {
                   </Badge>
                 </div>
               </div>
+
             </CardContent>
           </Card>
 
-          {/* Activities Section */}
+          {/* Activities */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Accessible Activities</h2>
+
             {countryActivities.length > 0 ? (
               <div className="grid md:grid-cols-2 gap-6">
-                {countryActivities.map(activity => (
+                {countryActivities.map((activity) => (
                   <ActivityCard
                     key={activity.id}
                     activity={activity}
                     country={countryData}
-                    profile={profile}
+                    profile={profile} // ✅ Works correctly
                   />
                 ))}
               </div>
@@ -139,25 +137,6 @@ const Destination = () => {
             )}
           </div>
 
-          {/* Hospital Finder Placeholder */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Nearby Healthcare Facilities</CardTitle>
-              <CardDescription>
-                Find hospitals, clinics, and pharmacies in {countryData.name}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">
-                  Interactive map will appear here
-                </p>
-              </div>
-              <p className="text-sm text-muted-foreground mt-4">
-                📍 Location: {countryData.latitude}, {countryData.longitude}
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </main>
 

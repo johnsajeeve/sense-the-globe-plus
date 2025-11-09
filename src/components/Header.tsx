@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Globe2, Heart, Users, LogOut } from "lucide-react";
+import { Globe2, Heart, Users, LogOut, MessageCircle } from "lucide-react"; // ✅ Added MessageCircle
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,11 +29,13 @@ const Header = () => {
     toast.success("Signed out successfully");
     navigate("/");
   };
-  
+
+  // ✅ Chat added here
   const navItems = [
     { path: "/", label: "Explore", icon: Globe2 },
     { path: "/profile", label: "My Profile", icon: Heart },
     { path: "/community", label: "Community", icon: Users },
+    { path: "/chat", label: "Chat", icon: MessageCircle }, // ✅ NEW CHAT TAB
   ];
 
   return (
@@ -45,12 +47,12 @@ const Header = () => {
             SenseTheWorld+
           </span>
         </Link>
-        
+
         <nav className="flex items-center gap-6">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-            
+
             return (
               <Link
                 key={item.path}
@@ -65,10 +67,10 @@ const Header = () => {
               </Link>
             );
           })}
-          
+
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            
+
             {user ? (
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
