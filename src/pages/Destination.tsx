@@ -58,16 +58,9 @@ const Destination = () => {
   }
 
   const countryData = countries[country];
-  
-  
 
-  /** 🌍 Fetch SDG 6 water data */
-  /** 🌍 Fetch Water Access Data (World Bank API) */
-/** 🌍 Fetch Water Access Data (World Bank API with fallback) */
-/** 🌍 Fetch World Bank water data (SDG 6.1.1) */
-/** 🌍 Fetch World Bank water data (SDG 6.1.1) */
-useEffect(() => {
-  const fetchFakeWaterData = () => {
+  /** 🌍 Load water access data (mock for now) */
+  useEffect(() => {
     const iso = countryData.iso;
     const waterInfo = waterAccessData[iso] || {
       value: 80.0,
@@ -75,19 +68,7 @@ useEffect(() => {
     };
     setWaterData(waterInfo);
     setLoadingWater(false);
-  };
-
-  fetchFakeWaterData();
-}, [countryData.iso]);
-
-
-
-
-
-
-
-
-  
+  }, [countryData.iso]);
 
   /** 🗺️ Initialize map */
   useEffect(() => {
@@ -127,7 +108,7 @@ useEffect(() => {
 
       const lat = countryData.latitude;
       const lon = countryData.longitude;
-      const delta = 0.5; // ~50 km box
+      const delta = 0.5;
       const minLat = lat - delta;
       const maxLat = lat + delta;
       const minLon = lon - delta;
@@ -161,9 +142,8 @@ useEffect(() => {
         }));
 
         setOsmPlaces(results);
-      } catch (err) {
-        console.error(err);
-        setOsmError("Failed to load OpenStreetMap data");
+      } catch {
+        setOsmError("Failed to load OpenStreetMap accessibility data");
       } finally {
         setLoadingPlaces(false);
       }
@@ -184,9 +164,22 @@ useEffect(() => {
           <ArrowLeft className="h-4 w-4" /> Back to Home
         </Button>
 
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">{countryData.name}</h1>
-          <p className="text-muted-foreground">
+        {/* ✅ Hero Banner Added Here */}
+        <div className="mb-10">
+          <div className="w-full h-64 md:h-72 lg:h-80 rounded-2xl overflow-hidden shadow-[0_12px_35px_-10px_rgba(0,170,255,0.25)] mb-6 relative group">
+            <img
+              src={`https://source.unsplash.com/1600x900/?${countryData.name},travel,landscape`}
+              alt={`${countryData.name} landscape`}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+          </div>
+
+          <h1 className="text-5xl font-extrabold tracking-tight mb-2">
+            {countryData.name}
+          </h1>
+          <p className="text-muted-foreground text-lg">
             Health information and accessible attractions
           </p>
         </div>
@@ -209,55 +202,41 @@ useEffect(() => {
                   <Syringe className="h-4 w-4 text-primary" />
                   <span className="font-medium">Recommended Vaccines</span>
                 </div>
-                <div className="space-y-1">
-                  {countryData.vaccines.map((vaccine) => (
-                    <Badge key={vaccine} variant="outline">
-                      {vaccine}
-                    </Badge>
-                  ))}
-                </div>
+                {countryData.vaccines.map((vaccine) => (
+                  <Badge key={vaccine} variant="outline">{vaccine}</Badge>
+                ))}
               </div>
+
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <AlertCircle className="h-4 w-4 text-yellow-500" />
                   <span className="font-medium">Active Outbreaks</span>
                 </div>
                 {countryData.outbreaks.length > 0 ? (
-                  countryData.outbreaks.map((outbreak) => (
-                    <Badge key={outbreak} variant="destructive">
-                      {outbreak}
-                    </Badge>
-                  ))
+                  countryData.outbreaks.map((o) => <Badge key={o} variant="destructive">{o}</Badge>)
                 ) : (
                   <span>No current outbreaks</span>
                 )}
               </div>
+
               <div>
-  <div className="flex items-center gap-2 mb-2">
-    <Droplet className="h-4 w-4 text-blue-500" />
-    <span className="font-medium">Water Safety (SDG 6.1.1)</span>
-  </div>
-
-  {loadingWater ? (
-    <p>Loading water data...</p>
-  ) : (
-    <p>
-      Access to drinking water:{" "}
-      <strong>{waterData?.value?.toFixed(1)}%</strong>{" "}
-      <small className="text-gray-500">({waterData?.source})</small>
-    </p>
-  )}
-</div>
-
+                <div className="flex items-center gap-2 mb-2">
+                  <Droplet className="h-4 w-4 text-blue-500" />
+                  <span className="font-medium">Water Safety (SDG 6.1.1)</span>
+                </div>
+                {loadingWater ? "Loading..." : (
+                  <p>
+                    Access to drinking water: <strong>{waterData?.value}%</strong>{" "}
+                    <small className="text-gray-500">({waterData?.source})</small>
+                  </p>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Map */}
-        <div
-          ref={mapContainer}
-          className="w-full h-96 rounded-lg shadow-md mb-8"
-        />
+        <div ref={mapContainer} className="w-full h-96 rounded-lg shadow-md mb-8" />
 
         {/* Accessible Attractions */}
         <div className="mb-8">
@@ -282,22 +261,20 @@ useEffect(() => {
                       {place.tourism || "Attraction"}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <Badge variant="outline" className="mr-2">
-                        {place.wheelchair === "yes"
-                          ? "♿ Wheelchair Accessible"
-                          : place.wheelchair === "limited"
-                          ? "♿ Limited Access"
-                          : place.wheelchair === "no"
-                          ? "🚫 Not Accessible"
-                          : "❓ Unknown"}
-                      </Badge>
-                    </div>
+                  <CardContent>
+                    <Badge variant="outline" className="mb-3">
+                      {place.wheelchair === "yes"
+                        ? "♿ Wheelchair Accessible"
+                        : place.wheelchair === "limited"
+                        ? "♿ Limited Access"
+                        : place.wheelchair === "no"
+                        ? "🚫 Not Accessible"
+                        : "❓ Unknown"}
+                    </Badge>
 
                     <Button
                       variant="secondary"
-                      className="w-full mt-2"
+                      className="w-full"
                       onClick={() =>
                         window.open(
                           `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lon}#map=18/${place.lat}/${place.lon}`,

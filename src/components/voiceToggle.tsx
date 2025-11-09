@@ -82,6 +82,23 @@ export default function VoiceToggle() {
       speak("Scrolling up");
       window.scrollBy({ top: -650, behavior: "smooth" });
     }
+
+    if (text.includes("read this page")) {
+      const synth = window.speechSynthesis;
+    
+      if (synth.speaking) {
+        synth.cancel(); // stop current speech if any
+      }
+    
+      const pageText = document.body.innerText;
+      if (pageText.trim()) {
+        const utterance = new SpeechSynthesisUtterance(pageText);
+        synth.speak(utterance);
+      }
+    
+      return;
+    }
+    
   }
 
   useEffect(() => {
@@ -111,6 +128,7 @@ export default function VoiceToggle() {
             <li>• Open chat</li>
             <li>• Scroll down / Scroll up</li>
             <li>• Where am I</li>
+            <li>• Read this page</li>
             <li>• Pause voice / Resume voice</li>
             <li>• Help (show this panel)</li>
           </ul>

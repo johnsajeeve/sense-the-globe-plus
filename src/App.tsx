@@ -14,7 +14,7 @@ import ChatPage from "./pages/chat";
 
 import VoiceToggle from "@/components/voiceToggle";
 import CommunityMembers from "./pages/CommunityMembers";
-
+import ReadAloud from "@/components/ReadAloud";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +51,7 @@ const App = () => (
 
         {/* Voice Mode Toggle is always available */}
         <VoiceToggle />
+        <ReadAloud/>
       </TooltipProvider>
     </QueryClientProvider>
   </BrowserRouter>
