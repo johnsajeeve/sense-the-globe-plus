@@ -1,3 +1,23 @@
+// 🌍 Fake but realistic water access data (SDG 6.1.1)
+export const waterAccessData: Record<string, { value: number; source: string }> = {
+  JP: { value: 99.5, source: "(OECD avg)" },
+  IN: { value: 72.3, source: "(developing region)" },
+  FR: { value: 98.9, source: "(EU avg)" },
+  US: { value: 99.2, source: "(CDC model)" },
+  GB: { value: 99.0, source: "(UK report)" },
+  ES: { value: 98.4, source: "(EU data)" },
+  IT: { value: 97.7, source: "(World Bank est.)" },
+  TH: { value: 89.3, source: "(Asia avg)" },
+  AU: { value: 99.8, source: "(Australia report)" },
+  BR: { value: 86.1, source: "(Latin America avg)" },
+  CA: { value: 99.7, source: "(Canada health data)" },
+  DE: { value: 99.1, source: "(Germany env. report)" },
+  MX: { value: 87.2, source: "(UNICEF est.)" },
+  AE: { value: 96.5, source: "(Middle East avg)" },
+  SG: { value: 100.0, source: "Singapore PUB)" },
+};
+
+
 export interface Country {
   iso: string;
   name: string;

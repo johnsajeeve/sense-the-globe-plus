@@ -179,11 +179,9 @@ const CommunityPage = () => {
                     )}
 
                     {/* ✅ View Members button */}
-                    <Link to={`/community/${community.id}`}>
-                      <Button variant="outline" className="w-full mt-1">
-                        View Members
-                      </Button>
-                    </Link>
+                    <Link to={`/community/${community.id}/members`}>
+  <Button variant="outline">View Members</Button>
+</Link>
                   </CardContent>
                 </Card>
               ))}

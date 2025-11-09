@@ -154,4 +154,20 @@ All colors MUST be HSL.
   white-space: nowrap;
   border: 0;
 }
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 12px rgba(0, 200, 255, 0.4), 0 0 30px rgba(0, 200, 255, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(0, 200, 255, 0.7), 0 0 45px rgba(0, 200, 255, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(0, 200, 255, 0.4), 0 0 30px rgba(0, 200, 255, 0.25);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.8s infinite ease-in-out;
+}
+
 

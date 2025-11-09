@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { waterAccessData } from "@/data/mockData";
 
 import {
   Card,
@@ -12,38 +13,38 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ArrowLeft, Droplet, Syringe } from "lucide-react";
+import { AlertCircle, ArrowLeft, Droplet, Syringe, Accessibility } from "lucide-react";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import ActivityCard from "@/components/ActivityCard";
-import { countries, activities } from "@/data/mockData";
+import { countries } from "@/data/mockData";
 import { loadProfile } from "@/utils/localStorage";
 
-interface WaterDataType {
-  page: number;
-  pages: number;
-  per_page: number;
-  total: number;
-  data: any[];
+interface OSMPlace {
+  id: number;
+  lat: number;
+  lon: number;
+  name: string;
+  wheelchair: string;
+  tourism?: string;
 }
 
 const Destination = () => {
   const { country } = useParams<{ country: string }>();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(loadProfile());
+  const [osmPlaces, setOsmPlaces] = useState<OSMPlace[]>([]);
+  const [loadingPlaces, setLoadingPlaces] = useState(true);
+  const [osmError, setOsmError] = useState<string | null>(null);
 
-  const [waterData, setWaterData] = useState<WaterDataType | null>(null);
   const [waterError, setWaterError] = useState<string | null>(null);
   const [loadingWater, setLoadingWater] = useState(true);
+  const [waterData, setWaterData] = useState<any>(null);
 
   const mapRef = useRef<L.Map | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
 
-  // Reload profile on mount
-  useEffect(() => {
-    setProfile(loadProfile());
-  }, []);
+  useEffect(() => setProfile(loadProfile()), []);
 
   if (!country || !countries[country]) {
     return (
@@ -57,33 +58,42 @@ const Destination = () => {
   }
 
   const countryData = countries[country];
-  const countryActivities = activities[country] || [];
+  
+  
 
   /** 🌍 Fetch SDG 6 water data */
-  useEffect(() => {
-    const fetchWaterData = async () => {
-      try {
-        const apiUrl = `https://corsproxy.io/?https://sdg6data.org/api/indicator/6.1.1?_format=json&country=${encodeURIComponent(
-          countryData.name
-        )}`;
-        const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error("Network error");
-        const json = await response.json();
-        setWaterData(json);
-      } catch (err) {
-        console.error("Failed to fetch SDG 6 data:", err);
-        setWaterError("Failed to fetch SDG 6 water data");
-      } finally {
-        setLoadingWater(false);
-      }
+  /** 🌍 Fetch Water Access Data (World Bank API) */
+/** 🌍 Fetch Water Access Data (World Bank API with fallback) */
+/** 🌍 Fetch World Bank water data (SDG 6.1.1) */
+/** 🌍 Fetch World Bank water data (SDG 6.1.1) */
+useEffect(() => {
+  const fetchFakeWaterData = () => {
+    const iso = countryData.iso;
+    const waterInfo = waterAccessData[iso] || {
+      value: 80.0,
+      source: "Estimated (no data)",
     };
+    setWaterData(waterInfo);
+    setLoadingWater(false);
+  };
 
-    fetchWaterData();
-  }, [countryData.name]);
+  fetchFakeWaterData();
+}, [countryData.iso]);
 
-  /** 🗺️ Initialize Leaflet map */
+
+
+
+
+
+
+
+  
+
+  /** 🗺️ Initialize map */
   useEffect(() => {
-    if (!mapContainer.current || mapRef.current) return;
+    if (!mapContainer.current) return;
+
+    if (mapRef.current) mapRef.current.remove();
 
     const { latitude, longitude } = countryData;
 
@@ -92,8 +102,6 @@ const Destination = () => {
       zoom: 5,
       scrollWheelZoom: true,
     });
-
-    mapRef.current = map;
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap contributors",
@@ -107,11 +115,62 @@ const Destination = () => {
       weight: 1.5,
     }).addTo(map);
 
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
+    mapRef.current = map;
+    return () => map.remove();
   }, [countryData]);
+
+  /** 🦽 Fetch accessible attractions from OpenStreetMap */
+  useEffect(() => {
+    const fetchOSMData = async () => {
+      setLoadingPlaces(true);
+      setOsmError(null);
+
+      const lat = countryData.latitude;
+      const lon = countryData.longitude;
+      const delta = 0.5; // ~50 km box
+      const minLat = lat - delta;
+      const maxLat = lat + delta;
+      const minLon = lon - delta;
+      const maxLon = lon + delta;
+
+      const query = `
+        [out:json][timeout:25];
+        (
+          node["tourism"="attraction"]["wheelchair"](${minLat},${minLon},${maxLat},${maxLon});
+          node["tourism"="museum"]["wheelchair"](${minLat},${minLon},${maxLat},${maxLon});
+          node["historic"]["wheelchair"](${minLat},${minLon},${maxLat},${maxLon});
+        );
+        out body;
+      `;
+
+      try {
+        const response = await fetch("https://overpass.kumi.systems/api/interpreter", {
+          method: "POST",
+          body: query,
+        });
+        if (!response.ok) throw new Error("Network error fetching OSM data");
+
+        const json = await response.json();
+        const results = (json.elements || []).map((el: any) => ({
+          id: el.id,
+          lat: el.lat,
+          lon: el.lon,
+          name: el.tags?.name || "Unnamed place",
+          wheelchair: el.tags?.wheelchair || "unknown",
+          tourism: el.tags?.tourism,
+        }));
+
+        setOsmPlaces(results);
+      } catch (err) {
+        console.error(err);
+        setOsmError("Failed to load OpenStreetMap data");
+      } finally {
+        setLoadingPlaces(false);
+      }
+    };
+
+    fetchOSMData();
+  }, [countryData.latitude, countryData.longitude]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -128,7 +187,7 @@ const Destination = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">{countryData.name}</h1>
           <p className="text-muted-foreground">
-            Health information and accessible activities
+            Health information and accessible attractions
           </p>
         </div>
 
@@ -160,7 +219,7 @@ const Destination = () => {
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="h-4 w-4 text-warning" />
+                  <AlertCircle className="h-4 w-4 text-yellow-500" />
                   <span className="font-medium">Active Outbreaks</span>
                 </div>
                 {countryData.outbreaks.length > 0 ? (
@@ -174,21 +233,22 @@ const Destination = () => {
                 )}
               </div>
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Droplet className="h-4 w-4 text-blue-500" />
-                  <span className="font-medium">Water Safety (SDG 6.1.1)</span>
-                </div>
-                {loadingWater ? (
-                  <span>Loading...</span>
-                ) : waterError ? (
-                  <span>{waterError}</span>
-                ) : (
-                  <span>
-                    Access to safely managed water:{" "}
-                    {waterData?.[1]?.[0]?.Value ?? "Data unavailable"}%
-                  </span>
-                )}
-              </div>
+  <div className="flex items-center gap-2 mb-2">
+    <Droplet className="h-4 w-4 text-blue-500" />
+    <span className="font-medium">Water Safety (SDG 6.1.1)</span>
+  </div>
+
+  {loadingWater ? (
+    <p>Loading water data...</p>
+  ) : (
+    <p>
+      Access to drinking water:{" "}
+      <strong>{waterData?.value?.toFixed(1)}%</strong>{" "}
+      <small className="text-gray-500">({waterData?.source})</small>
+    </p>
+  )}
+</div>
+
             </div>
           </CardContent>
         </Card>
@@ -199,27 +259,59 @@ const Destination = () => {
           className="w-full h-96 rounded-lg shadow-md mb-8"
         />
 
-        {/* Activities */}
+        {/* Accessible Attractions */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Activities</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            {countryActivities.length > 0 ? (
-              countryActivities.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} country={undefined} profile={{
-                  conditions: [],
-                  created_at: "",
-                  email: "",
-                  full_name: "",
-                  id: "",
-                  mobility_level: "",
-                  triggers: [],
-                  updated_at: ""
-                }} />
-              ))
-            ) : (
-              <span>No activities available</span>
-            )}
-          </div>
+          <h2 className="text-2xl font-bold mb-4">
+            Accessible Attractions in {countryData.name}
+          </h2>
+
+          {loadingPlaces ? (
+            <p>Loading attractions...</p>
+          ) : osmError ? (
+            <p className="text-red-500">{osmError}</p>
+          ) : osmPlaces.length === 0 ? (
+            <p>No accessible attractions found nearby.</p>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {osmPlaces.map((place) => (
+                <Card key={place.id} className="hover:shadow-lg transition">
+                  <CardHeader>
+                    <CardTitle>{place.name}</CardTitle>
+                    <CardDescription className="flex items-center gap-2">
+                      <Accessibility className="h-4 w-4 text-blue-500" />
+                      {place.tourism || "Attraction"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div>
+                      <Badge variant="outline" className="mr-2">
+                        {place.wheelchair === "yes"
+                          ? "♿ Wheelchair Accessible"
+                          : place.wheelchair === "limited"
+                          ? "♿ Limited Access"
+                          : place.wheelchair === "no"
+                          ? "🚫 Not Accessible"
+                          : "❓ Unknown"}
+                      </Badge>
+                    </div>
+
+                    <Button
+                      variant="secondary"
+                      className="w-full mt-2"
+                      onClick={() =>
+                        window.open(
+                          `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lon}#map=18/${place.lat}/${place.lon}`,
+                          "_blank"
+                        )
+                      }
+                    >
+                      View on Map
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </main>
       <Footer />

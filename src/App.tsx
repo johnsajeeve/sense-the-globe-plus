@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import ChatPage from "./pages/chat";
 
 import VoiceToggle from "@/components/voiceToggle";
+import CommunityMembers from "./pages/CommunityMembers";
+
 
 const queryClient = new QueryClient();
 
@@ -40,8 +42,10 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/destination/:country" element={<Destination />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/community/:id/members" element={<CommunityMembers />} />
             <Route path="/chat" element={<ChatPage />} />
             <Route path="*" element={<NotFound />} />
+            
           </Routes>
         </main>
 
